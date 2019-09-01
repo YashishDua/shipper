@@ -1,13 +1,27 @@
 package shipper
 
 type Shipper struct {
-	Reader Reader
-	Writer Writer
+	Reader    Reader
+	Writer    Writer
+	Transport Transport
 }
 
 func NewShipper(config Config) Shipper {
 	if config.BatchSize == 0 {
 		config.BatchSize = 10000
+	}
+
+	transport := Transport{
+		Type: DefaultTransport,
+	}
+
+	if config.TCP != (TCP{}) {
+		// TCP enabled
+		transport = Transport{
+			Type: TCPTransport,
+			Host: config.TCP.Host,
+			Port: config.TCP.Port,
+		}
 	}
 
 	reader := Reader{
@@ -21,14 +35,15 @@ func NewShipper(config Config) Shipper {
 	}
 
 	shipper := Shipper{
-		Reader: reader,
-		Writer: writer,
+		Reader:    reader,
+		Writer:    writer,
+		Transport: transport,
 	}
 
 	return shipper
 }
 
-func (shipper *Shipper) Ship() error {
+func (shipper *Shipper) ShipAndDock() error {
 	if openErr := shipper.Reader.open(); openErr != nil {
 		return openErr
 	}
@@ -46,6 +61,22 @@ func (shipper *Shipper) Ship() error {
 
 	if writeErr := shipper.Writer.write(chunks); writeErr != nil {
 		return writeErr
+	}
+
+	return nil
+}
+
+func (shipper *Shipper) Ship() error {
+	if connErr := shipper.Transport.connect(); connErr != nil {
+		return connErr
+	}
+
+	return nil
+}
+
+func (shipper *Shipper) Dock() error {
+	if connErr := shipper.Transport.receive(); connErr != nil {
+		return connErr
 	}
 
 	return nil
