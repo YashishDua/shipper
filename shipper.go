@@ -32,10 +32,12 @@ func (shipper *Shipper) Ship() error {
 	if openErr := shipper.Reader.open(); openErr != nil {
 		return openErr
 	}
+	defer shipper.Reader.close()
 
 	if openErr := shipper.Writer.open(); openErr != nil {
 		return openErr
 	}
+	defer shipper.Writer.close()
 
 	readErr, chunks := shipper.Reader.read()
 	if readErr != nil {

@@ -49,3 +49,7 @@ func (writer *Writer) chunkWrite(wg *sync.WaitGroup, chunk string, index int) er
 
 	return nil
 }
+
+func (writer *Writer) close() error {
+	return writer.DestinationFile.Close()
+}

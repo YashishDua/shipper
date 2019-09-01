@@ -55,3 +55,7 @@ func (reader *Reader) chunkRead(wg *sync.WaitGroup, chunks []string, index int) 
 
 	chunks[index] = string(buffer[:bytesread])
 }
+
+func (reader *Reader) close() error {
+	return reader.SourceFile.Close()
+}
