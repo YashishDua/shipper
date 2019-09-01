@@ -2,6 +2,7 @@ package shipper
 
 import (
 	"os"
+	"sync"
 )
 
 type Writer struct {
@@ -21,10 +22,29 @@ func (writer *Writer) open() error {
 }
 
 func (writer *Writer) write(chunks []string) error {
-	for i := 0; i < len(chunks); i++ {
-		if _, err := writer.DestinationFile.WriteString(chunks[i]); err != nil {
-			return err
-		}
+	routines := len(chunks)
+
+	var (
+		wg sync.WaitGroup
+	)
+
+	wg.Add(routines)
+
+	for i := 0; i < routines; i++ {
+		go writer.chunkWrite(&wg, chunks[i], i)
+	}
+
+	wg.Wait()
+
+	return nil
+}
+
+func (writer *Writer) chunkWrite(wg *sync.WaitGroup, chunk string, index int) error {
+	defer wg.Done()
+
+	offset := int64(index * writer.BatchSize)
+	if _, writeErr := writer.DestinationFile.WriteAt([]byte(chunk), offset); writeErr != nil {
+		return writeErr
 	}
 
 	return nil
