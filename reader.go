@@ -6,9 +6,10 @@ import (
 )
 
 type Reader struct {
-	SourcePath string
-	BatchSize  int
-	SourceFile *os.File
+	SourcePath     string
+	BatchSize      int
+	SourceFile     *os.File
+	SourceFileSize int
 }
 
 func (reader *Reader) open() error {
@@ -22,18 +23,24 @@ func (reader *Reader) open() error {
 }
 
 func (reader *Reader) read() (error, []string) {
-	fileinfo, err := reader.SourceFile.Stat()
-	if err != nil {
-		return err, nil
+	var (
+		wg       sync.WaitGroup
+		fileSize int
+	)
+
+	if reader.SourceFileSize != 0 {
+		fileSize = reader.SourceFileSize
+	} else {
+		fileinfo, err := reader.SourceFile.Stat()
+		if err != nil {
+			return err, nil
+		}
+
+		fileSize = int(fileinfo.Size())
 	}
 
-	fileSize := int(fileinfo.Size())
 	routines := fileSize/reader.BatchSize + 1
 	chunks := make([]string, routines)
-
-	var (
-		wg sync.WaitGroup
-	)
 
 	wg.Add(routines)
 

@@ -25,8 +25,9 @@ func NewShipper(config Config) Shipper {
 	}
 
 	reader := Reader{
-		SourcePath: config.Source,
-		BatchSize:  config.BatchSize,
+		SourcePath:     config.Source,
+		SourceFileSize: config.SourceFileSize,
+		BatchSize:      config.BatchSize,
 	}
 
 	writer := Writer{
