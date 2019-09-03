@@ -18,32 +18,19 @@ func (writer *Writer) open() error {
 	}
 
 	writer.DestinationFile = destinationFile
-	return nil
-}
-
-func (writer *Writer) write(chunks []string) error {
-	routines := len(chunks)
-
-	var (
-		wg sync.WaitGroup
-	)
-
-	wg.Add(routines)
-
-	for i := 0; i < routines; i++ {
-		go writer.chunkWrite(&wg, chunks[i], i)
-	}
-
-	wg.Wait()
 
 	return nil
 }
 
-func (writer *Writer) chunkWrite(wg *sync.WaitGroup, chunk string, index int) error {
+func (writer *Writer) write(wg *sync.WaitGroup, packet Packet) {
+	go writer.chunkWrite(wg, packet)
+}
+
+func (writer *Writer) chunkWrite(wg *sync.WaitGroup, packet Packet) error {
 	defer wg.Done()
 
-	offset := int64(index * writer.BatchSize)
-	if _, writeErr := writer.DestinationFile.WriteAt([]byte(chunk), offset); writeErr != nil {
+	offset := int64(packet.Index * writer.BatchSize)
+	if _, writeErr := writer.DestinationFile.WriteAt([]byte(packet.Value), offset); writeErr != nil {
 		return writeErr
 	}
 

@@ -16,22 +16,22 @@ const (
 	TCPTransport     int = 1
 )
 
-func (transport *Transport) connect() error {
+func (transport *Transport) connect() (net.Conn, error) {
 	conn, connErr := net.Dial("tcp", fmt.Sprintf("%s:%d", transport.Host, transport.Port))
 	if connErr != nil {
-		return connErr
+		return nil, connErr
 	}
 
-	fmt.Println("TCP Connect: ", conn)
-	return nil
+	return conn, nil
 }
 
-func (transport *Transport) receive() error {
+func (transport *Transport) listen() (net.Conn, error) {
 	listen, listenErr := net.Listen("tcp", fmt.Sprintf(":%d", transport.Port))
 	if listenErr != nil {
-		return listenErr
+		return nil, listenErr
 	}
 
-	fmt.Println("TCP Receive: ", listen)
-	return nil
+	conn, _ := listen.Accept()
+
+	return conn, nil
 }
