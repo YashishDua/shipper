@@ -16,6 +16,14 @@ go get github.com/yashishdua/shipper
 
 ## 1. Ship in the same machine (non-TCP)
 
+### Configuration
+
+| Config | Description |
+| --- | --- |
+| Source | Source file path |
+| Destination | Destination file path |
+| BatchSize | Total characters to be processed in 1 concurrent batch. Default is 10000 |
+
 ```go
 func main() {
 	shipper := shipper.NewShipper(shipper.Config{
@@ -31,6 +39,16 @@ func main() {
 ```
 
 ## 2. Ship between two machines (TCP)
+
+### Configuration
+
+| Config | Description |
+| --- | --- |
+| TCP Host | Destination host where to ship data |
+| TCP Port | Destination port where to ship data |
+| Source | Source file path |
+| Destination | Destination file path |
+| BatchSize | Total characters to be processed in 1 concurrent batch. Default is 10000 |
 
 ### TCP Source
 
@@ -52,6 +70,8 @@ func main() {
 ```
 
 ### TCP Destination
+
+> TCP Destination only requires file path and port
 
 ```go
 func main() {
