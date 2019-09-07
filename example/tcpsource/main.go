@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"shipper"
+
+	"github.com/yashishdua/shipper"
 )
 
 func main() {
