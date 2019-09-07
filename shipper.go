@@ -175,6 +175,7 @@ func (shipper *Shipper) dockConnection(conn net.Conn) error {
 			shipper.Writer.BatchSize, _ = strconv.Atoi(packet.Value)
 		} else if packet.Type == EOF {
 			fmt.Println("File written successfully")
+			break
 		} else if packet.Type == Chunk {
 			if shipper.Writer.BatchSize == 0 {
 				return fmt.Errorf("BatchSize Packet lost, restart the process")
