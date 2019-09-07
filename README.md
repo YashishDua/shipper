@@ -1,5 +1,5 @@
 # shipper
-High speed file transfer
+Ship large files concurrently
 
 ## Features
 1. Concurrent and high speed shipping
