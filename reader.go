@@ -1,6 +1,7 @@
 package shipper
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -22,7 +23,7 @@ func (reader *Reader) open() error {
 	return nil
 }
 
-func (reader *Reader) read(p chan Packet) (int, error) {
+func (reader *Reader) init() (int, error) {
 	var fileSize int
 
 	if reader.SourceFileSize != 0 {
@@ -38,11 +39,13 @@ func (reader *Reader) read(p chan Packet) (int, error) {
 
 	routines := fileSize/reader.BatchSize + 1
 
+	return routines, nil
+}
+
+func (reader *Reader) read(routines int, p chan Packet) {
 	for i := 0; i < routines; i++ {
 		go reader.chunkRead(p, i)
 	}
-
-	return routines, nil
 }
 
 func (reader *Reader) chunkRead(p chan Packet, index int) {
@@ -57,6 +60,8 @@ func (reader *Reader) chunkRead(p chan Packet, index int) {
 	}
 }
 
-func (reader *Reader) close() error {
-	return reader.SourceFile.Close()
+func (reader *Reader) close() {
+	if closeErr := reader.SourceFile.Close(); closeErr != nil {
+		fmt.Println(closeErr)
+	}
 }

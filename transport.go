@@ -25,13 +25,13 @@ func (transport *Transport) connect() (net.Conn, error) {
 	return conn, nil
 }
 
-func (transport *Transport) listen() (net.Conn, error) {
+func (transport *Transport) listen() (net.Listener, error) {
 	listen, listenErr := net.Listen("tcp", fmt.Sprintf(":%d", transport.Port))
 	if listenErr != nil {
 		return nil, listenErr
 	}
 
-	conn, _ := listen.Accept()
+	//conn, _ := listen.Accept()
 
-	return conn, nil
+	return listen, nil
 }

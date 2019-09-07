@@ -3,6 +3,7 @@ package shipper
 import (
 	"encoding/gob"
 	"fmt"
+	"net"
 	"strconv"
 	"sync"
 )
@@ -63,19 +64,21 @@ func (shipper *Shipper) ShipAndDock() error {
 	}
 	defer shipper.Writer.close()
 
-	p := make(chan Packet)
+	packetsChannel := make(chan Packet)
 
-	routines, readErr := shipper.Reader.read(p)
-	if readErr != nil {
-		fmt.Println(readErr)
+	routines, initErr := shipper.Reader.init()
+	if initErr != nil {
+		fmt.Println(initErr)
 	}
+
+	shipper.Reader.read(routines, packetsChannel)
 
 	var (
 		wg sync.WaitGroup
 	)
 
 	for i := 0; i < routines; i++ {
-		packet := <-p
+		packet := <-packetsChannel
 		wg.Add(1)
 		shipper.Writer.write(&wg, packet)
 	}
@@ -84,6 +87,12 @@ func (shipper *Shipper) ShipAndDock() error {
 
 	return nil
 }
+
+/*
+
+	TCP based
+
+*/
 
 func (shipper *Shipper) Ship() error {
 	conn, connErr := shipper.Transport.connect()
@@ -97,13 +106,15 @@ func (shipper *Shipper) Ship() error {
 	}
 	defer shipper.Reader.close()
 
-	p := make(chan Packet)
+	packetsChannel := make(chan Packet)
 	encoder := gob.NewEncoder(conn)
 
-	routines, readErr := shipper.Reader.read(p)
-	if readErr != nil {
-		fmt.Println(readErr)
+	routines, initErr := shipper.Reader.init()
+	if initErr != nil {
+		fmt.Println(initErr)
 	}
+
+	shipper.Reader.read(routines, packetsChannel)
 
 	// Passing BatchSize
 	encoder.Encode(Packet{
@@ -112,7 +123,7 @@ func (shipper *Shipper) Ship() error {
 	})
 
 	for i := 0; i < routines; i++ {
-		packet := <-p
+		packet := <-packetsChannel
 		encoder.Encode(packet)
 	}
 
@@ -127,10 +138,22 @@ func (shipper *Shipper) Ship() error {
 }
 
 func (shipper *Shipper) Dock() error {
-	conn, connErr := shipper.Transport.listen()
+	connListener, connErr := shipper.Transport.listen()
 	if connErr != nil {
 		return connErr
 	}
+	defer connListener.Close()
+
+	for {
+		conn, acceptErr := connListener.Accept()
+		if acceptErr != nil {
+			return acceptErr
+		}
+		go shipper.dockConnection(conn)
+	}
+}
+
+func (shipper *Shipper) dockConnection(conn net.Conn) error {
 	defer conn.Close()
 
 	if openErr := shipper.Writer.open(); openErr != nil {
@@ -151,7 +174,7 @@ func (shipper *Shipper) Dock() error {
 		if packet.Type == BatchSize {
 			shipper.Writer.BatchSize, _ = strconv.Atoi(packet.Value)
 		} else if packet.Type == EOF {
-			break
+			fmt.Println("File written successfully")
 		} else if packet.Type == Chunk {
 			if shipper.Writer.BatchSize == 0 {
 				return fmt.Errorf("BatchSize Packet lost, restart the process")
@@ -163,8 +186,6 @@ func (shipper *Shipper) Dock() error {
 	}
 
 	wg.Wait()
-
-	fmt.Println("File written successfully")
 
 	return nil
 }
